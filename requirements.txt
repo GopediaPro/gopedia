@@ -1,0 +1,14 @@
+# FastAPI
+fastapi uvicorn[standard]
+# SQLAlchemy (Async)
+sqlalchemy[asyncio]
+# 비동기 PostgreSQL 드라이버
+asyncpg
+# Pydantic (FastAPI에 포함되지만 명시)
+pydantic pydantic-settings # 설정 관리용
+# Database Migrations
+alembic
+# Async HTTP Client
+httpx
+# .env 파일 로드
+python-dotenv
