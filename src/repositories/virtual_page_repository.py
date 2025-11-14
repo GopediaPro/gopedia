@@ -37,7 +37,8 @@ class VirtualPageRepository:
         """
         새로운 Anchor를 생성합니다.
         """
-        db_anchor = Anchor(**anchor_data.model_dump())
+        # by_alias=True를 사용하여 metadata -> meta_data로 매핑
+        db_anchor = Anchor(**anchor_data.model_dump(by_alias=True))
         self.db.add(db_anchor)
         await self.db.commit()
         await self.db.refresh(db_anchor)

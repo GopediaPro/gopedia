@@ -63,7 +63,7 @@ class OutlineService:
             "publish": True # 생성 즉시 발행
         }
 
-        async with httpx.AsyncClient(headers=self.headers, http2=True) as client:
+        async with httpx.AsyncClient(headers=self.headers, http2=False, timeout=30.0) as client:
             try:
                 response = await client.post(api_endpoint, json=payload)
                 response.raise_for_status() # API 오류 시 예외 발생
@@ -82,3 +82,31 @@ class OutlineService:
                 raise
             except Exception as e:
                 raise
+
+    async def test_connection(self) -> dict:
+        """
+        Outline API 연결을 테스트합니다.
+        """
+        try:
+            async with httpx.AsyncClient(headers=self.headers, http2=False, timeout=10.0) as client:
+                # Outline API의 collections.list 엔드포인트로 연결 테스트
+                api_endpoint = f"{self.api_url}/api/collections.list"
+                response = await client.get(api_endpoint)
+                response.raise_for_status()
+                data = response.json()
+                return {
+                    "status": "success",
+                    "message": "Outline API connection successful",
+                    "collections_count": len(data.get("data", []))
+                }
+        except httpx.HTTPStatusError as e:
+            return {
+                "status": "error",
+                "message": f"Outline API error: {e.response.status_code} - {e.response.text}",
+                "error_code": e.response.status_code
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Connection failed: {str(e)}"
+            }

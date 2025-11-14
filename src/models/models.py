@@ -1,4 +1,5 @@
 import enum
+import uuid
 from sqlalchemy import Column, String, Text, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,7 +29,8 @@ class Anchor(BaseModel):
     # GitHub SHA, Node ID 등
     origin_id: Mapped[Optional[str]] = mapped_column(String(255))
     
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB)
+    # metadata는 SQLAlchemy 예약어이므로 meta_data로 변경
+    meta_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, name="metadata")
 
     # VirtualPage와의 1:1 관계 (Anchor -> VirtualPage)
     virtual_page: Mapped["VirtualPage"] = relationship(

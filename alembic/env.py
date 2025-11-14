@@ -14,15 +14,16 @@ from dotenv import load_dotenv
 
 # 프로젝트 루트(alembic.ini가 있는 곳)의 .env 파일 로드
 # alembic.ini가 프로젝트 루트에 있다고 가정
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+project_root = os.path.join(os.path.dirname(__file__), '..')
+load_dotenv(os.path.join(project_root, '.env'))
 
-# src 디렉터리를 Python 경로에 추가
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# 프로젝트 루트를 Python 경로에 추가 (src 모듈을 임포트하기 위해)
+sys.path.insert(0, os.path.abspath(project_root))
 # --- 
 
 # SQLAlchemy 모델 임포트 (Base.metadata를 위함)
-from models.base import Base as BaseModel # src/models/base.py의 Base
-from models import models # src/models/models.py (테이블 모델들 임포트)
+from src.models.base import Base as BaseModel # src/models/base.py의 Base
+from src.models import models # src/models/models.py (테이블 모델들 임포트)
 
 # Alembic Config 객체 (context에서 사용)
 config = context.config

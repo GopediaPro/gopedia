@@ -10,6 +10,7 @@ from src.schemas.anchor_schema import AnchorCreate
 from src.schemas.virtual_page_schema import VirtualPageCreate
 from src.models.models import AnchorType
 from src.core.config import settings
+from src.core.database import get_db_session
 
 class GitHubService(BaseSourceService):
     
@@ -31,14 +32,14 @@ class GitHubService(BaseSourceService):
         # 여기서는 비동기 처리를 보여주기 위한 목업(mock) 데이터를 사용합니다.
         print(f"Scanning repo: {repo_name}")
         
-        async with httpx.AsyncClient(headers=self.headers, http2=True) as client:
+        async with httpx.AsyncClient(headers=self.headers, http2=False, timeout=30.0) as client:
             try:
                 # 리포지토리 루트 컨텐츠 가져오기
                 root_items = await self._fetch_github_contents(client, repo_name, "")
                 
-                # 병렬 처리
+                # 병렬 처리 - 각 태스크마다 독립적인 세션 사용
                 tasks = [
-                    self.process_item(item, repo_name, client) for item in root_items
+                    self._process_item_with_session(item, repo_name, client) for item in root_items
                 ]
                 await asyncio.gather(*tasks)
 
@@ -56,7 +57,24 @@ class GitHubService(BaseSourceService):
         response.raise_for_status() # 오류 시 예외 발생
         return response.json()
 
-    async def process_item(self, item: Dict[str, Any], repo_name: str, client: httpx.AsyncClient):
+    async def _process_item_with_session(self, item: Dict[str, Any], repo_name: str, client: httpx.AsyncClient):
+        """
+        독립적인 세션을 생성하여 process_item을 실행하는 래퍼 함수.
+        각 병렬 태스크마다 독립적인 세션을 사용합니다.
+        """
+        session = await get_db_session()
+        try:
+            # 새로운 리포지토리 인스턴스 생성 (독립적인 세션 사용)
+            repo = VirtualPageRepository(session)
+            await self._process_item(item, repo_name, client, repo)
+        except Exception as e:
+            print(f"Error in _process_item_with_session: {e}")
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+    async def _process_item(self, item: Dict[str, Any], repo_name: str, client: httpx.AsyncClient, repo: VirtualPageRepository):
         """
         GitHub 아이템(파일 또는 디렉터리)을 처리합니다.
         디렉터리인 경우 재귀적으로 스캔합니다.
@@ -72,7 +90,7 @@ class GitHubService(BaseSourceService):
         locator = f"github:{repo_name}/{item_path}"
 
         # 2. Anchor가 이미 존재하는지 확인 (sha 비교 포함)
-        existing_anchor = await self.repository.find_anchor_by_locator(locator)
+        existing_anchor = await repo.find_anchor_by_locator(locator)
         
         if existing_anchor:
             if existing_anchor.origin_id == item_sha:
@@ -83,7 +101,8 @@ class GitHubService(BaseSourceService):
                 # print(f"Updating: {locator}")
                 existing_anchor.origin_id = item_sha
                 # ... 메타데이터 업데이트 ...
-                await self.repository.db.commit()
+                await repo.db.commit()
+                await repo.db.refresh(existing_anchor)
         else:
             # 3. Anchor가 없는 경우 (신규 생성)
             print(f"Creating new Anchor/Page for: {locator}")
@@ -98,7 +117,7 @@ class GitHubService(BaseSourceService):
             
             try:
                 # 4. Anchor 생성
-                new_anchor = await self.repository.create_anchor(anchor_data)
+                new_anchor = await repo.create_anchor(anchor_data)
 
                 # 5. VirtualPage 데이터 준비 (파일인 경우 내용 일부 가져오기)
                 title = item.get("name")
@@ -117,19 +136,20 @@ class GitHubService(BaseSourceService):
                 )
                 
                 # 6. VirtualPage 생성
-                await self.repository.create_virtual_page(page_data)
+                await repo.create_virtual_page(page_data)
             
             except Exception as e:
                 # (중요) 동시성 문제나 유니크 제약 조건 위반 시 롤백
                 print(f"Error processing item {locator}: {e}")
-                await self.repository.db.rollback()
+                await repo.db.rollback()
 
 
         # 7. 디렉터리인 경우 재귀 호출
         if item_type == "dir":
             try:
                 sub_items = await self._fetch_github_contents(client, repo_name, item_path)
-                tasks = [self.process_item(sub_item, repo_name, client) for sub_item in sub_items]
+                # 재귀 호출 시에도 각 태스크마다 독립적인 세션 사용
+                tasks = [self._process_item_with_session(sub_item, repo_name, client) for sub_item in sub_items]
                 await asyncio.gather(*tasks)
             except httpx.HTTPStatusError as e:
                 print(f"Error fetching directory contents {item_path}: {e}")
@@ -149,3 +169,30 @@ class GitHubService(BaseSourceService):
         except Exception as e:
             print(f"Error fetching file content {path}: {e}")
         return None
+
+    async def test_connection(self) -> dict:
+        """
+        GitHub API 연결을 테스트합니다.
+        """
+        try:
+            async with httpx.AsyncClient(headers=self.headers, http2=False, timeout=10.0) as client:
+                # GitHub API의 user 엔드포인트로 인증 테스트
+                response = await client.get("https://api.github.com/user")
+                response.raise_for_status()
+                user_data = response.json()
+                return {
+                    "status": "success",
+                    "message": "GitHub API connection successful",
+                    "user": user_data.get("login", "unknown")
+                }
+        except httpx.HTTPStatusError as e:
+            return {
+                "status": "error",
+                "message": f"GitHub API error: {e.response.status_code} - {e.response.text}",
+                "error_code": e.response.status_code
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Connection failed: {str(e)}"
+            }

@@ -37,6 +37,6 @@ class BaseModel(Base):
     # updated_by: Mapped[str | None] = mapped_column(String(255))
 
     # 테이블 이름을 클래스 이름(소문자)으로 자동 설정
-    @declared_attr.cascading
+    @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower() + "s" # 예: Anchor -> anchors
