@@ -97,7 +97,20 @@ jobs:
           MAIN_SHA=$(git ls-remote origin main | awk '{print $1}')
           echo "MAIN_SHA=$MAIN_SHA" >> $GITHUB_OUTPUT
 
+      - name: Check if branch exists
+        id: check_branch
+        run: |
+          BRANCH_NAME="${{ steps.calculate_vars.outputs.BRANCH_NAME }}"
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "refs/heads/$BRANCH_NAME"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH_NAME' already exists. Skipping branch creation."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH_NAME' does not exist. Will create it."
+          fi
+
       - name: Create Issue Branch with action-create-branch
+        if: steps.check_branch.outputs.exists != 'true'
         uses: peterjgrainger/action-create-branch@v3.0.0
         with:
           branch: ${{ steps.calculate_vars.outputs.BRANCH_NAME }}
