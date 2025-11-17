@@ -19,8 +19,12 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      - name: Checkout repository
       - uses: actions/checkout@v4
-      
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Calculate Branch Variables
         id: calculate_vars
         run: |
@@ -37,16 +41,15 @@ jobs:
           fi
           
           # 3. LABELS (레이블 다수 시 common)
-          LABEL_ARRAY='${{ toJson(github.event.issue.labels.*.name) }}'
-          LABEL_COUNT=$(echo "$LABEL_ARRAY" | grep -o ',' | wc -l)
-          LABEL_COUNT=$((LABEL_COUNT + 1))
+          LABEL_JSON='${{ toJSON(github.event.issue.labels) }}'
+          # 레이블 개수 계산 (jq 사용)
+          LABEL_COUNT=$(echo "$LABEL_JSON" | jq 'length')
           
           if [ "$LABEL_COUNT" -gt 1 ]; then
             LABEL_SLUG="common"
           else
             # 레이블이 1개일 경우 해당 레이블 사용 (슬러그 처리)
-            # 레이블이 0개일 경우, common이 아닌 'no-label' 등 다른 명시적 값도 고려 가능 (여기서는 1개 이하로 간주하고 첫 번째 레이블 사용)
-            FIRST_LABEL=$(echo "$LABEL_ARRAY" | sed -n 's/^\["\(.*\)"\]/\1/p')
+            FIRST_LABEL=$(echo "$LABEL_JSON" | jq -r '.[0].name // empty')
             if [ -z "$FIRST_LABEL" ]; then
               LABEL_SLUG="no-label" # 레이블이 없는 경우 처리
             else
@@ -55,7 +58,7 @@ jobs:
           fi
           
           # 4. ISSUE TYPE (커밋 컨벤션 스타일을 ISSUE_TEMPLATE을 통해 가져온다고 가정 - 아래 2번 참고)
-          ISSUE_TYPE_LABEL=$(echo "$LABEL_ARRAY" | grep -oE '"type-[^"]*"' | head -1 | sed 's/"//g' | sed 's/type-//')
+          ISSUE_TYPE_LABEL=$(echo "$LABEL_JSON" | jq -r '.[] | select(.name | startswith("type-")) | .name' | head -1 | sed 's/type-//')
           
           if [ -z "$ISSUE_TYPE_LABEL" ]; then
             ISSUE_TYPE_SLUG="misc"
