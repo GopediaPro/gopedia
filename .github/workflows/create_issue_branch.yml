@@ -7,11 +7,12 @@ on:
       - opened
       - labeled
       - unlabeled
+      - reopened
 
 jobs:
   create_branch:
     # 이슈가 열렸을 때만 실행 (선택적)
-    if: github.event.action == 'opened'
+    if: github.event.action == 'opened' || github.event.action == 'reopened'
     runs-on: ubuntu-latest
     permissions:
       contents: write
