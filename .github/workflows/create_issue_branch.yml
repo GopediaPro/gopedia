@@ -57,8 +57,10 @@ jobs:
             fi
           fi
           
-          # 4. ISSUE TYPE (커밋 컨벤션 스타일을 ISSUE_TEMPLATE을 통해 가져온다고 가정 - 아래 2번 참고)
-          ISSUE_TYPE_LABEL=$(echo "$LABEL_JSON" | jq -r '.[] | select(.name | startswith("type-")) | .name' | head -1 | sed 's/type-//')
+          # 4. ISSUE TYPE (이슈 템플릿의 form 필드에서 가져오기)
+          ISSUE_BODY='${{ github.event.issue.body }}'
+          # 이슈 본문에서 "Issue Type" 섹션 다음 줄의 값을 추출
+          ISSUE_TYPE_LABEL=$(echo "$ISSUE_BODY" | grep -A 1 "🔖 Issue Type" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
           
           if [ -z "$ISSUE_TYPE_LABEL" ]; then
             ISSUE_TYPE_SLUG="misc"
