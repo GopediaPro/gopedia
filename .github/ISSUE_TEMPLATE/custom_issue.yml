@@ -1,10 +1,24 @@
 # .github/ISSUE_TEMPLATE/custom_issue.yml
 name: 커스텀 개발 이슈 (Custom Development Issue)
-description: 브랜치 생성에 필요한 이슈 유형을 포함하는 템플릿입니다.
+description: [feat], [fix], [test], [ops], [refactor] 중 하나를 기입해주세요.
 title: "[TYPE] 제목을 입력해주세요"
 labels: ["triage"]
 
 body:
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: 📌 Issue Type
+      description: 이슈의 유형을 선택해주세요 (제목의 [TYPE]과 일치해야 합니다)
+      options:
+        - feat
+        - fix
+        - test
+        - ops
+        - refactor
+    validations:
+      required: true
+
   - type: textarea
     id: problem_description
     attributes:

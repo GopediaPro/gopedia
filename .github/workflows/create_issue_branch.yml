@@ -59,12 +59,13 @@ jobs:
           
           # 4. ISSUE TYPE
           # 이슈에서 "Issue Type" 값을 추출
-          ISSUE_TYPE_LABEL='${{ github.event.issue.type }}'
-          
-          if [ -z "$ISSUE_TYPE_LABEL" ]; then
-            ISSUE_TYPE_SLUG="misc"
-          else
-            ISSUE_TYPE_SLUG=$(echo "$ISSUE_TYPE_LABEL" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]\n' '-')
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_TYPE=$(
+            echo "$ISSUE_TITLE" | grep -oP '\[(.*?)\]' | sed 's/[\[\]]//g' | tr '[:upper:]' '[:lower:]' | head -n 1
+          )
+          # 추출된 값이 없으면 기본값을 설정
+          if [ -z "$ISSUE_TYPE" ]; then
+            ISSUE_TYPE="issue" # issue 라벨이 없으면 issue 라벨로 처리
           fi
           
           # 5. WORKER (user.name 기반, 없으면 SKIP)
@@ -79,12 +80,12 @@ jobs:
           fi
 
           # 최종 브랜치 이름 구성
-          BRANCH_NAME="${MILESTONE_SLUG}/${LABEL_SLUG}/${ISSUE_TYPE_SLUG}/${ISSUE_NUMBER}${WORKER_SLUG}"
+          BRANCH_NAME="${MILESTONE_SLUG}/${LABEL_SLUG}/${ISSUE_TYPE}/${ISSUE_NUMBER}${WORKER_SLUG}"
           
           # GitHub Action 결과 변수로 설정
           echo "MILESTONE_SLUG=$MILESTONE_SLUG" >> $GITHUB_OUTPUT
           echo "LABEL_SLUG=$LABEL_SLUG" >> $GITHUB_OUTPUT
-          echo "ISSUE_TYPE_SLUG=$ISSUE_TYPE_SLUG" >> $GITHUB_OUTPUT
+          echo "ISSUE_TYPE=$ISSUE_TYPE" >> $GITHUB_OUTPUT
           echo "WORKER_SLUG=$WORKER_SLUG" >> $GITHUB_OUTPUT
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
           
