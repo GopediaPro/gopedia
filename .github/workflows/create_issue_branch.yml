@@ -11,7 +11,7 @@ on:
 jobs:
   create_branch:
     # 이슈가 열렸을 때만 실행 (선택적)
-    if: github.event.action == 'opened' || github.event.action == 'labeled'
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -90,10 +90,10 @@ jobs:
           echo "Generated Branch Name: $BRANCH_NAME"
 
       - name: Create Issue Branch
-        uses: peterjgrainger/action-create-branch@v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # 위 step에서 계산한 최종 브랜치 이름 사용
           branch-name: ${{ steps.calculate_vars.outputs.BRANCH_NAME }}
-          token: ${{ secrets.GITHUB_TOKEN }}
           # 이슈가 닫힐 때 브랜치 자동 삭제 (선택 사항)
           delete-branch-on-close: true
