@@ -1,11 +1,3 @@
-# -n 은 가장 최근 commit 개수 (push한 commit 개수) 
-git diff $(git rev-list --reverse main..HEAD | tail -n 14 | head -n 1)^..HEAD > changes.diff
-git log main..HEAD -n 14 --pretty=format:"%h %s" --name-status > commit_summary.txt
-git diff --stat $(git rev-list --reverse main..HEAD | tail -n 14 | head -n 1)^..HEAD > changes_stat.txt
-
-# PR prompt 입니다.
-## 작성된 PR 자료를 Markdown 툴(obsidian,...)에 복사 붙여넣기 한 다음 다시 복사 github PR에 붙여넣기 해야함.
-
 You are an expert software developer and technical writer. Your task is to refine a Pull Request (PR) template and then draft a PR description using that refined template, referencing provided file changes.
 
 Here's the current PR template content:

@@ -1,0 +1,45 @@
+# .github/ISSUE_TEMPLATE/custom_issue.yml
+name: 커스텀 개발 이슈 (Custom Development Issue)
+description: 브랜치 생성에 필요한 이슈 유형을 포함하는 템플릿입니다.
+title: "[TYPE] 제목을 입력해주세요"
+labels: ["triage"]
+
+body:
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: 🔖 Issue Type (커밋 컨벤션 스타일)
+      description: 브랜치 이름의 핵심 유형을 선택해주세요. (브랜치 이름의 '/[Issue Type]/'에 사용됩니다.)
+      options:
+        - feat
+        - fix
+        - docs
+        - style
+        - refactor
+        - perf
+        - test
+        - chore
+    validations:
+      required: true
+      
+  - type: textarea
+    id: problem_description
+    attributes:
+      label: 📝 문제/요구 사항
+      description: 어떤 문제(버그)를 해결하거나 어떤 기능(요구 사항)을 개발해야 하나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: 🎯 기대되는 동작/결과
+      description: 이 작업이 완료되면 시스템이 어떻게 동작해야 하나요?
+      
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 체크리스트
+      options:
+        - label: 해당 작업에 대한 마일스톤 또는 레이블이 올바르게 설정되었는지 확인했습니다.
+          required: true
