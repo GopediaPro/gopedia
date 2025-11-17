@@ -57,10 +57,9 @@ jobs:
             fi
           fi
           
-          # 4. ISSUE TYPE (이슈 템플릿의 form 필드에서 가져오기)
-          ISSUE_BODY='${{ github.event.issue.body }}'
-          # 이슈 본문에서 "Issue Type" 섹션 다음 줄의 값을 추출
-          ISSUE_TYPE_LABEL=$(echo "$ISSUE_BODY" | grep -A 1 "🔖 Issue Type" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+          # 4. ISSUE TYPE
+          # 이슈에서 "Issue Type" 값을 추출
+          ISSUE_TYPE_LABEL='${{ github.event.issue.type }}'
           
           if [ -z "$ISSUE_TYPE_LABEL" ]; then
             ISSUE_TYPE_SLUG="misc"
