@@ -90,7 +90,7 @@ jobs:
           echo "Generated Branch Name: $BRANCH_NAME"
 
       - name: Create Issue Branch
-        uses: peterjgrainger/action-issue-branch@v2.2.0
+        uses: peterjgrainger/action-create-branch@v3.0.0
         with:
           # 위 step에서 계산한 최종 브랜치 이름 사용
           branch-name: ${{ steps.calculate_vars.outputs.BRANCH_NAME }}
