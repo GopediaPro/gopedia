@@ -58,10 +58,10 @@ jobs:
           fi
           
           # 4. ISSUE TYPE
-          # 이슈에서 "Issue Type" 값을 추출
+          # 이슈에서 "Issue Type" 값을 추출 (대괄호 안의 값만 추출)
           ISSUE_TITLE="${{ github.event.issue.title }}"
           ISSUE_TYPE=$(
-            echo "$ISSUE_TITLE" | grep -oP '\[(.*?)\]' | sed 's/[\[\]]//g' | tr '[:upper:]' '[:lower:]' | head -n 1
+            echo "$ISSUE_TITLE" | sed -n 's/.*\[\([^]]*\)\].*/\1/p' | tr '[:upper:]' '[:lower:]' | head -n 1
           )
           # 추출된 값이 없으면 기본값을 설정
           if [ -z "$ISSUE_TYPE" ]; then
