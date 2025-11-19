@@ -90,12 +90,12 @@ jobs:
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
           
           echo "Generated Branch Name: $BRANCH_NAME"
-      - name: Get SHA of the main branch
-        id: get_main_sha
-        # main 브랜치의 최신 커밋 SHA를 가져옵니다.
+      - name: Get SHA of the dev branch
+        id: get_dev_sha
+        # dev 브랜치의 최신 커밋 SHA를 가져옵니다.
         run: |
-          MAIN_SHA=$(git ls-remote origin main | awk '{print $1}')
-          echo "MAIN_SHA=$MAIN_SHA" >> $GITHUB_OUTPUT
+          DEV_SHA=$(git ls-remote origin dev | awk '{print $1}')
+          echo "DEV_SHA=$DEV_SHA" >> $GITHUB_OUTPUT
 
       - name: Check if branch exists
         id: check_branch
@@ -114,8 +114,8 @@ jobs:
         uses: peterjgrainger/action-create-branch@v3.0.0
         with:
           branch: ${{ steps.calculate_vars.outputs.BRANCH_NAME }}
-          # main 브랜치 기반으로 브랜치를 생성하기 위해 SHA를 명시합니다.
-          sha: ${{ steps.get_main_sha.outputs.MAIN_SHA }}
+          # dev 브랜치 기반으로 브랜치를 생성하기 위해 SHA를 명시합니다.
+          sha: ${{ steps.get_dev_sha.outputs.DEV_SHA }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # 이슈가 닫힐 때 브랜치 자동 삭제 (선택 사항)
