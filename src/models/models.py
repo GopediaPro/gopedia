@@ -13,6 +13,7 @@ class AnchorType(enum.Enum):
     FILESYSTEM = "filesystem"
     TODO = "todo"
     CALENDAR = "calendar"
+    # ... 추가 가능
 
 class Anchor(BaseModel):
     """
@@ -33,6 +34,7 @@ class Anchor(BaseModel):
     meta_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, name="metadata")
 
     # VirtualPage와의 1:1 관계 (Anchor -> VirtualPage)
+    # todo [feat] VirtualPage 대표 페이지 선택기능(중복 가능)
     virtual_page: Mapped["VirtualPage"] = relationship(
         "VirtualPage", 
         back_populates="anchor", 
@@ -45,7 +47,7 @@ class VirtualPage(BaseModel):
     하나의 Anchor에 1:1로 매핑되며, 요약 정보와 Outline ID를 가집니다.
     """
     __tablename__ = "virtual_pages"
-
+    # todo [feat] VirtualPage 대표 페이지 선택기능(중복 가능)
     # Anchor와의 1:1 관계 (VirtualPage -> Anchor)
     anchor_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("anchors.id"), unique=True, nullable=False
