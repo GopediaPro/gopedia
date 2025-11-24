@@ -1,8 +1,8 @@
-# .github/ISSUE_TEMPLATE/custom_issue.yml
-name: 커스텀 개발 이슈 (Custom Development Issue)
-description: [feat], [fix], [test], [ops], [refactor] 중 하나를 기입해주세요.
+name: "커스텀 개발 이슈 (Custom Development Issue)"
+description: "[feat], [fix], [test], [ops], [refactor] 중 하나를 기입해주세요."
 title: "[TYPE] 제목을 입력해주세요"
-labels: ["triage"]
+labels:
+  - triage
 
 body:
   - type: dropdown
