@@ -1,0 +1,19 @@
+# Core Framework & Async IO
+fastapi
+uvicorn[standard]
+
+# Database & ORM
+sqlalchemy[asyncio]>=2.0.0
+asyncpg  # High-performance async PostgreSQL driver
+pgvector # Vector embedding support
+alembic  # Migration tool
+
+# Configuration & Validation
+pydantic>=2.0.0
+pydantic-settings
+python-dotenv
+
+# Utils
+greenlet # Required for async sqlalchemy
+grpcio-tools
+types-protobuf

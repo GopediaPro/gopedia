@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package gopedia;
+
+import "google/protobuf/struct.proto";
+
+service PluginService {
+  // 만능 실행 메서드: 요청도 결과도 유동적인 구조(Struct)를 사용
+  rpc Execute (PluginRequest) returns (PluginResult);
+}
+
+message PluginRequest {
+  string context_urn = 1;       // 작업 대상 데이터 (e.g., "urn:gopedia:wiki:101")
+  string operation = 2;         // 수행할 명령 (e.g., "summarize", "fetch_status")
+  google.protobuf.Struct params = 3; // 실행 파라미터 (JSON)
+  google.protobuf.Struct payload = 4; // 데이터 스냅샷 (Optional)
+}
+
+message PluginResult {
+  bool success = 1;
+  string error_message = 2;
+  google.protobuf.Struct data = 3; // 결과 데이터 (JSON)
+}
