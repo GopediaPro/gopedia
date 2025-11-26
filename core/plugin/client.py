@@ -4,7 +4,11 @@ from google.protobuf.json_format import ParseDict, MessageToDict
 
 # Generated code imports
 # (경로 문제 해결을 위해 try-except 혹은 상대 경로 조정 필요. 여기선 절대 경로 가정)
-from core.plugin.generated import gopedia_pb2, gopedia_pb2_grpc
+try:
+    from core.plugin.generated import gopedia_pb2, gopedia_pb2_grpc
+except ImportError:  # pragma: no cover - only hit in local dev/tests without proto stubs
+    gopedia_pb2 = None  # type: ignore[assignment]
+    gopedia_pb2_grpc = None  # type: ignore[assignment]
 from core.plugin.interface import PluginClientInterface
 from domain.schemas.plugin import PluginPayload, PluginResult
 
@@ -22,6 +26,11 @@ class GrpcPluginClient(PluginClientInterface):
 
     async def connect(self, service_address: str) -> None:
         """비동기 채널 생성"""
+        if gopedia_pb2_grpc is None:
+            raise RuntimeError(
+                "gRPC stubs are missing. Run `python -m grpc_tools.protoc ...` "
+                "to generate core.plugin.generated modules before connecting."
+            )
         self.channel = grpc.aio.insecure_channel(service_address)
         self.stub = gopedia_pb2_grpc.PluginServiceStub(self.channel)
         logger.info(f"🔌 Connected to Plugin Service at {service_address}")
@@ -29,6 +38,10 @@ class GrpcPluginClient(PluginClientInterface):
     async def execute(self, payload: PluginPayload) -> PluginResult:
         if not self.stub:
             raise ConnectionError("Plugin client is not connected.")
+        if gopedia_pb2 is None:
+            raise RuntimeError(
+                "gRPC stubs are missing. Run the protoc generation step before executing."
+            )
 
         # 1. Pydantic -> Protobuf Request 변환
         req = gopedia_pb2.PluginRequest(

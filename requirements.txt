@@ -17,3 +17,7 @@ python-dotenv
 greenlet # Required for async sqlalchemy
 grpcio-tools
 types-protobuf
+httpx
+
+# Testing
+pytest
