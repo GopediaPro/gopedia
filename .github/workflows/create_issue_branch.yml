@@ -1,0 +1,122 @@
+# .github/issue-branch.yml
+
+# GitHub Action: Issue Branch
+on:
+  issues:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+      - reopened
+
+jobs:
+  create_branch:
+    # 이슈가 열렸을 때만 실행 (선택적)
+    if: github.event.action == 'opened' || github.event.action == 'reopened'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Calculate Branch Variables
+        id: calculate_vars
+        run: |
+          # 1. ISSUE NUMBER (필수)
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          
+          # 2. MILESTONE (마일스톤 부재 시 common)
+          MILESTONE_TITLE="${{ github.event.issue.milestone.title }}"
+          if [ -z "$MILESTONE_TITLE" ]; then
+            MILESTONE_SLUG="common"
+          else
+            # 소문자 변환 및 공백/특수문자 처리
+            MILESTONE_SLUG=$(echo "$MILESTONE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]\n' '-')
+          fi
+          
+          # 3. LABELS (레이블 다수 시 common)
+          LABEL_JSON='${{ toJSON(github.event.issue.labels) }}'
+          # 레이블 개수 계산 (jq 사용)
+          LABEL_COUNT=$(echo "$LABEL_JSON" | jq 'length')
+          
+          if [ "$LABEL_COUNT" -gt 1 ]; then
+            LABEL_SLUG="common"
+          else
+            # 레이블이 1개일 경우 해당 레이블 사용 (슬러그 처리)
+            FIRST_LABEL=$(echo "$LABEL_JSON" | jq -r '.[0].name // empty')
+            if [ -z "$FIRST_LABEL" ]; then
+              LABEL_SLUG="no-label" # 레이블이 없는 경우 처리
+            else
+              LABEL_SLUG=$(echo "$FIRST_LABEL" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]\n' '-')
+            fi
+          fi
+          
+          # 4. ISSUE TYPE
+          # 이슈에서 "Issue Type" 값을 추출 (대괄호 안의 값만 추출)
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_TYPE=$(
+            echo "$ISSUE_TITLE" | sed -n 's/.*\[\([^]]*\)\].*/\1/p' | tr '[:upper:]' '[:lower:]' | head -n 1
+          )
+          # 추출된 값이 없으면 기본값을 설정
+          if [ -z "$ISSUE_TYPE" ]; then
+            ISSUE_TYPE="issue" # issue 라벨이 없으면 issue 라벨로 처리
+          fi
+          
+          # 5. WORKER (user.name 기반, 없으면 SKIP)
+          # 사용자 이름에는 특수문자가 있을 수 있으므로 슬러그 처리
+          USER_NAME="${{ github.event.issue.user.login }}"
+          if [ -z "$USER_NAME" ]; then
+            WORKER_SLUG=""
+          else
+            WORKER_SLUG=$(echo "$USER_NAME" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]\n' '-')
+            # Worker가 있으면 접두사 '-' 추가
+            WORKER_SLUG="-$WORKER_SLUG"
+          fi
+
+          # 최종 브랜치 이름 구성
+          BRANCH_NAME="${MILESTONE_SLUG}/${LABEL_SLUG}/${ISSUE_TYPE}/${ISSUE_NUMBER}${WORKER_SLUG}"
+          
+          # GitHub Action 결과 변수로 설정
+          echo "MILESTONE_SLUG=$MILESTONE_SLUG" >> $GITHUB_OUTPUT
+          echo "LABEL_SLUG=$LABEL_SLUG" >> $GITHUB_OUTPUT
+          echo "ISSUE_TYPE=$ISSUE_TYPE" >> $GITHUB_OUTPUT
+          echo "WORKER_SLUG=$WORKER_SLUG" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
+          echo "Generated Branch Name: $BRANCH_NAME"
+      - name: Get SHA of the dev branch
+        id: get_dev_sha
+        # dev 브랜치의 최신 커밋 SHA를 가져옵니다.
+        run: |
+          DEV_SHA=$(git ls-remote origin dev | awk '{print $1}')
+          echo "DEV_SHA=$DEV_SHA" >> $GITHUB_OUTPUT
+
+      - name: Check if branch exists
+        id: check_branch
+        run: |
+          BRANCH_NAME="${{ steps.calculate_vars.outputs.BRANCH_NAME }}"
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "refs/heads/$BRANCH_NAME"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH_NAME' already exists. Skipping branch creation."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH_NAME' does not exist. Will create it."
+          fi
+
+      - name: Create Issue Branch with action-create-branch
+        if: steps.check_branch.outputs.exists != 'true'
+        uses: peterjgrainger/action-create-branch@v3.0.0
+        with:
+          branch: ${{ steps.calculate_vars.outputs.BRANCH_NAME }}
+          # dev 브랜치 기반으로 브랜치를 생성하기 위해 SHA를 명시합니다.
+          sha: ${{ steps.get_dev_sha.outputs.DEV_SHA }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 이슈가 닫힐 때 브랜치 자동 삭제 (선택 사항)
+          delete-branch-on-close: true
