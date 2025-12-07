@@ -15,7 +15,7 @@ source venv/bin/activate
 venv\Scripts\activate
 
 # library 설치
-pip3 install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
 # 8011 포트 fastAPI 실행
 uvicorn src.main:app --port 8011 --reload
