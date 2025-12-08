@@ -21,4 +21,8 @@ class Settings(BaseSettings):
     GITHUB_BRANCH: str = Field("main", description="GitHub branch name (default: main)")
     GITHUB_TOKEN: Optional[str] = Field(None, description="GitHub personal access token (optional, for rate limits)")
 
+    # LLM / Embedding
+    LLM_API_KEY: Optional[str] = Field(None, description="API key for LLM/embedding provider")
+    LLM_MODEL: str = Field("text-embedding-3-small", description="Default LLM/embedding model name")
+
 settings = Settings()
