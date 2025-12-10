@@ -4,9 +4,8 @@ GitHub Seed Controller
 Controller layer for GitHub repository seeding (CLI and FastAPI).
 """
 import asyncio
-import sys
-import os
 import argparse
+import traceback
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -16,6 +15,7 @@ from src.infrastructure.database import AsyncSessionLocal, get_db
 from src.infrastructure.external.github_client import GitHubClient
 from src.services.github_seed_service import GitHubSeedService
 from src.core.config import settings
+from src.services.llm import get_ingestion_service
 
 
 # ============================================================================
@@ -82,7 +82,8 @@ class GitHubSeedController:
         if session:
             # Use provided session (for FastAPI dependency injection)
             github_client = GitHubClient(token=token)
-            seed_service = GitHubSeedService(session, github_client)
+            ingestion_service = get_ingestion_service(session)
+            seed_service = GitHubSeedService(session, github_client, ingestion_service)
             return await seed_service.seed_repository(
                 owner=owner,
                 repo=repo,
@@ -92,7 +93,8 @@ class GitHubSeedController:
             # Create new session (for CLI)
             async with AsyncSessionLocal() as new_session:
                 github_client = GitHubClient(token=token)
-                seed_service = GitHubSeedService(new_session, github_client)
+                ingestion_service = get_ingestion_service(new_session)
+                seed_service = GitHubSeedService(new_session, github_client, ingestion_service)
                 return await seed_service.seed_repository(
                     owner=owner,
                     repo=repo,

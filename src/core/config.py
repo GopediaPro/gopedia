@@ -21,4 +21,9 @@ class Settings(BaseSettings):
     GITHUB_BRANCH: str = Field("main", description="GitHub branch name (default: main)")
     GITHUB_TOKEN: Optional[str] = Field(None, description="GitHub personal access token (optional, for rate limits)")
 
+    # LLM / Embedding
+    LLM_API_KEY: Optional[str] = Field(None, description="API key for LLM/embedding provider")
+    LLM_EMBEDDING_MODEL: str = Field("gemini-embedding-001", description="Default LLM/embedding model name")
+    LLM_GENERATION_MODEL: str = Field("gemini-2.5-flash-lite", description="Default LLM/generation model name")
+ 
 settings = Settings()
