@@ -86,7 +86,7 @@ class ChunkingConfig:
 
 @dataclass
 class EmbeddingConfig:
-    model: str = "text-embedding-3-small"
+    model: str  # e.g., "text-embedding-3-small" or "gemini-embedding-001"
     max_retries: int = 2
     max_concurrency: int = 8  # tune per rate-limit window
     rate_limit_per_sec: Optional[int] = None  # e.g., 10 → 10 calls/sec
