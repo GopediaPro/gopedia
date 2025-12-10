@@ -4,26 +4,29 @@ GitHub Seed Service
 Service layer for seeding GitHub repository data into the database.
 """
 import os
-import hashlib
 from typing import Optional, Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.external.github_client import GitHubClient
 from src.infrastructure.repositories.seed_repository import SeedRepository
-from src.utils.helpers import generate_urn, slugify, split_path, split_into_chunks
+from src.utils.helpers import generate_urn, slugify, split_path
 from src.domain.entities import (
     OriginData, Revision, TreeNode, ChunkNode, KnowledgeEdge
 )
+from src.services.llm import IngestionService, ChunkingConfig, EmbeddingConfig
+from src.services.llm import get_ingestion_service
+from src.core.config import settings
 
 
 class GitHubSeedService:
     """Service for seeding GitHub repository data."""
     
-    def __init__(self, session: AsyncSession, github_client: GitHubClient):
+    def __init__(self, session: AsyncSession, github_client: GitHubClient, ingestion_service: Optional[IngestionService] = None):
         self.session = session
         self.github_client = github_client
         self.seed_repo = SeedRepository(session)
+        self.ingestion_service = ingestion_service
     
     async def seed_repository(
         self,
@@ -295,18 +298,8 @@ class GitHubSeedService:
             file_data.curr_rev_id = revision.id
             
             # Create ChunkNodes for text files
-            if content_type.startswith("text/"):
-                chunks = split_into_chunks(content)
-                for idx, chunk_data in enumerate(chunks):
-                    chunk_hash = hashlib.sha256(chunk_data['content'].encode('utf-8')).hexdigest()
-                    chunk_node = ChunkNode(
-                        revision_id=revision.id,
-                        chunk_hash=chunk_hash,
-                        chunk_type=chunk_data['type'],
-                        content_summary=chunk_data['summary'],
-                        ord=idx
-                    )
-                    self.session.add(chunk_node)
+            if content_type.startswith("text/") and self.ingestion_service:
+                await self._ingest_and_create_chunks(content, revision)
             
             # Create KnowledgeEdge: Repository Contains File
             contains_edge = KnowledgeEdge(
@@ -323,13 +316,134 @@ class GitHubSeedService:
         
         return file_count
     
+
+
+    async def _ingest_and_create_chunks(self, content: str, revision: Revision):
+    
+
+
+        """Ingest document and create chunk nodes."""
+    
+
+
+        if not self.ingestion_service:
+    
+
+
+            return
+    
+
+
+        
+    
+
+
+        print(f"    Ingesting and creating chunks for revision {revision.id}...")
+    
+
+
+        
+    
+
+
+        chunk_cfg = ChunkingConfig()
+    
+
+
+        embed_cfg = EmbeddingConfig(model=settings.LLM_EMBEDDING_MODEL)
+    
+
+
+        
+    
+
+
+        try:
+    
+
+
+            chunk_nodes = await self.ingestion_service.ingest_document(
+    
+
+
+                raw_text=content,
+    
+
+
+                revision=revision,
+    
+
+
+                chunk_cfg=chunk_cfg,
+    
+
+
+                embed_cfg=embed_cfg,
+    
+
+
+            )
+    
+
+
+            self.session.add_all(chunk_nodes)
+    
+
+
+            await self.session.flush()
+    
+
+
+            print(f"    Created {len(chunk_nodes)} chunk nodes.")
+    
+
+
+        except Exception as e:
+    
+
+
+            print(f"    Error during ingestion: {e}")
+    
+
+
+            
+    
+
+
     def _get_content_type(self, ext: str) -> str:
+    
+
+
         """Get content type based on file extension."""
+    
+
+
         if ext in ['.md', '.markdown']:
+    
+
+
             return "text/markdown"
+    
+
+
         elif ext in ['.py']:
+    
+
+
             return "text/x-python"
+    
+
+
         elif ext in ['.json']:
+    
+
+
             return "application/json"
+    
+
+
         else:
+    
+
+
             return "text/plain"
