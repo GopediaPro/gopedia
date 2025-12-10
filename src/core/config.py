@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # LLM / Embedding
     LLM_API_KEY: Optional[str] = Field(None, description="API key for LLM/embedding provider")
-    LLM_MODEL: str = Field("text-embedding-3-small", description="Default LLM/embedding model name")
-
+    LLM_EMBEDDING_MODEL: str = Field("gemini-embedding-001", description="Default LLM/embedding model name")
+    LLM_GENERATION_MODEL: str = Field("gemini-2.5-flash-lite", description="Default LLM/generation model name")
+ 
 settings = Settings()
